@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surveying Calculation Tool</title>
+<style>
+body{font-family:Arial,sans-serif;background:#eef2f7;color:#1e293b;padding:18px}
+main{max-width:520px;margin:20px auto;background:white;padding:22px;border-radius:14px;box-shadow:0 4px 18px #0001}
+h1{color:#14532d}
+label{display:block;margin-top:16px;font-weight:bold}
+input,select{width:100%;box-sizing:border-box;padding:12px;margin-top:6px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px}
+button{margin-top:20px;padding:13px;width:100%;background:#166534;color:white;border:0;border-radius:8px;font-size:16px}
+#result{margin-top:20px;padding:15px;background:#dcfce7;border-radius:8px;line-height:1.8;white-space:pre-line;overflow-wrap:anywhere}
+.note{color:#64748b;font-size:13px}
+</style>
+</head>
+<body>
+<main>
+<h1>Surveying Calculation Tool</h1>
+<p>Calculate Height of Instrument and Reduced Level.</p>
+<label for="method">Calculation method</label>
+<select id="method" onchange="updateFields()">
+<option value="hi">Height of Instrument (HI) method</option>
+<option value="rise">Rise and Fall method (one reading pair)</option>
+</select>
+<div id="hiFields">
+<label for="rl">Known Reduced Level (RL) in metres</label>
+<input id="rl" type="number" step="any" placeholder="e.g. 100">
+<label for="bs">Back Sight (BS) in metres</label>
+<input id="bs" type="number" min="0" step="any" placeholder="e.g. 1.5">
+<label for="fs">Fore Sight (FS) in metres</label>
+<input id="fs" type="number" min="0" step="any" placeholder="e.g. 1.2">
+</div>
+<div id="riseFields" hidden>
+<label for="previous">Previous staff reading in metres</label>
+<input id="previous" type="number" min="0" step="any" placeholder="e.g. 1.5">
+<label for="current">Current staff reading in metres</label>
+<input id="current" type="number" min="0" step="any" placeholder="e.g. 1.2">
+<label for="knownRL">Previous point RL in metres</label>
+<input id="knownRL" type="number" step="any" placeholder="e.g. 100">
+</div>
+<button onclick="calculate()">Calculate</button>
+<div id="result" role="status" aria-live="polite">Your result will appear here.</div>
+<p class="note">Educational tool for basic levelling calculations. Verify field observations before practical use.</p>
+</main>
+<script>
+function updateFields(){
+const hi=document.getElementById("method").value==="hi";
+document.getElementById("hiFields").hidden=!hi;
+document.getElementById("riseFields").hidden=hi;
+document.getElementById("result").textContent="Enter the readings and tap Calculate.";
+}
+function readNumber(id){
+const v=document.getElementById(id).value;
+return v.trim()===""?NaN:Number(v);
+}
+function calculate(){
+if(document.getElementById("method").value==="hi"){
+const rl=readNumber("rl"),bs=readNumber("bs"),fs=readNumber("fs");
+if(![rl,bs,fs].every(Number.isFinite)||bs<0||fs<0){
+document.getElementById("result").textContent="Enter a valid RL and non-negative BS and FS.";return;
+}
+const hi=rl+bs,newRL=hi-fs;
+document.getElementById("result").textContent="Height of Instrument (HI) = "+hi.toFixed(3)+" m\nNew Reduced Level (RL) = "+newRL.toFixed(3)+" m\n\nHI = Known RL + BS\nHI = "+rl+" + "+bs+"\nNew RL = HI - FS\nNew RL = "+hi.toFixed(3)+" - "+fs;
+}else{
+const p=readNumber("previous"),c=readNumber("current"),rl=readNumber("knownRL");
+if(![p,c,rl].every(Number.isFinite)||p<0||c<0){
+document.getElementById("result").textContent="Enter valid readings and a known RL.";return;
+}
+const d=p-c,newRL=rl+d,type=d>0?"Rise":d<0?"Fall":"No rise or fall";
+document.getElementById("result").textContent=type+" = "+Math.abs(d).toFixed(3)+" m\nNew RL = "+newRL.toFixed(3)+" m\n\nNew RL = Previous RL + Previous reading - Current reading\nNew RL = "+rl+" + "+p+" - "+c;
+}
+}
+</script>
+</body>
+</html>
