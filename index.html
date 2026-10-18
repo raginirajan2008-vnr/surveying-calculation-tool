@@ -5,72 +5,167 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Surveying Calculation Tool</title>
 <style>
-body{font-family:Arial,sans-serif;background:#eef2f7;color:#1e293b;padding:18px}
-main{max-width:520px;margin:20px auto;background:white;padding:22px;border-radius:14px;box-shadow:0 4px 18px #0001}
-h1{color:#14532d}
-label{display:block;margin-top:16px;font-weight:bold}
-input,select{width:100%;box-sizing:border-box;padding:12px;margin-top:6px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px}
-button{margin-top:20px;padding:13px;width:100%;background:#166534;color:white;border:0;border-radius:8px;font-size:16px}
-#result{margin-top:20px;padding:15px;background:#dcfce7;border-radius:8px;line-height:1.8;white-space:pre-line;overflow-wrap:anywhere}
-.note{color:#64748b;font-size:13px}
+body{font-family:Arial,sans-serif;background:#f1f5f9;margin:0;padding:16px;color:#172033}
+header{background:#14532d;color:white;padding:22px;border-radius:14px;text-align:center}
+.card{background:white;padding:18px;margin-top:16px;border-radius:12px;box-shadow:0 2px 8px #0001}
+h2{color:#166534;font-size:20px}
+label{display:block;margin-top:12px;font-weight:bold}
+input,select{box-sizing:border-box;width:100%;padding:12px;margin-top:6px;border:1px solid #cbd5e1;border-radius:7px;font-size:16px}
+button{padding:12px;border:0;border-radius:7px;background:#15803d;color:white;font-size:15px;margin-top:12px;cursor:pointer}
+.secondary{background:#334155}
+.result{background:#dcfce7;padding:12px;border-radius:8px;margin-top:12px;line-height:1.8}
+.tablewrap{overflow-x:auto;margin-top:12px}
+table{border-collapse:collapse;width:100%;min-width:650px}
+th,td{border:1px solid #cbd5e1;padding:9px;text-align:center}
+th{background:#dcfce7}
+small{color:#64748b}
+@media print{button,.no-print{display:none}body{background:white}.card{box-shadow:none}}
 </style>
 </head>
 <body>
-<main>
-<h1>Surveying Calculation Tool</h1>
-<p>Calculate Height of Instrument and Reduced Level.</p>
-<label for="method">Calculation method</label>
-<select id="method" onchange="updateFields()">
-<option value="hi">Height of Instrument (HI) method</option>
-<option value="rise">Rise and Fall method (one reading pair)</option>
-</select>
-<div id="hiFields">
-<label for="rl">Known Reduced Level (RL) in metres</label>
-<input id="rl" type="number" step="any" placeholder="e.g. 100">
-<label for="bs">Back Sight (BS) in metres</label>
-<input id="bs" type="number" min="0" step="any" placeholder="e.g. 1.5">
-<label for="fs">Fore Sight (FS) in metres</label>
-<input id="fs" type="number" min="0" step="any" placeholder="e.g. 1.2">
+<header>
+<h1>📐 Surveying Calculator</h1>
+<p>Levelling • HI Method • Level Book • Arithmetic Check</p>
+</header>
+
+<div class="card">
+<h2>1. Height of Instrument (HI) Method</h2>
+<label>Known RL (m)</label>
+<input id="rl" type="number" step="any" placeholder="Example: 100">
+<label>Back Sight (BS) (m)</label>
+<input id="bs" type="number" step="any" placeholder="Example: 1.5">
+<label>Fore Sight (FS) (m)</label>
+<input id="fs" type="number" step="any" placeholder="Example: 1.2">
+<button onclick="calculateHI()">Calculate HI and New RL</button>
+<div id="hiResult" class="result" hidden></div>
 </div>
-<div id="riseFields" hidden>
-<label for="previous">Previous staff reading in metres</label>
-<input id="previous" type="number" min="0" step="any" placeholder="e.g. 1.5">
-<label for="current">Current staff reading in metres</label>
-<input id="current" type="number" min="0" step="any" placeholder="e.g. 1.2">
-<label for="knownRL">Previous point RL in metres</label>
-<input id="knownRL" type="number" step="any" placeholder="e.g. 100">
+
+<div class="card">
+<h2>2. Level Book</h2>
+<p>Enter the station name and staff readings. Use BS, IS or FS for each row.</p>
+<label>Starting RL (m)</label>
+<input id="startRL" type="number" step="any" value="100">
+<div class="tablewrap">
+<table id="levelTable">
+<thead><tr><th>Station</th><th>BS (m)</th><th>IS (m)</th><th>FS (m)</th></tr></thead>
+<tbody>
+<tr>
+<td><input aria-label="Station" value="BM"></td>
+<td><input aria-label="BS" type="number" step="any" value="1.5"></td>
+<td><input aria-label="IS" type="number" step="any"></td>
+<td><input aria-label="FS" type="number" step="any"></td>
+</tr>
+<tr>
+<td><input aria-label="Station" value="Point 1"></td>
+<td><input aria-label="BS" type="number" step="any"></td>
+<td><input aria-label="IS" type="number" step="any" value="1.2"></td>
+<td><input aria-label="FS" type="number" step="any"></td>
+</tr>
+<tr>
+<td><input aria-label="Station" value="Last Point"></td>
+<td><input aria-label="BS" type="number" step="any"></td>
+<td><input aria-label="IS" type="number" step="any"></td>
+<td><input aria-label="FS" type="number" step="any" value="0.9"></td>
+</tr>
+</tbody>
+</table>
 </div>
-<button onclick="calculate()">Calculate</button>
-<div id="result" role="status" aria-live="polite">Your result will appear here.</div>
-<p class="note">Educational tool for basic levelling calculations. Verify field observations before practical use.</p>
-</main>
+<button onclick="addRow()">+ Add Station</button>
+<button onclick="calculateBook()">Calculate Level Book</button>
+<div id="bookResult" class="result" hidden></div>
+<div id="output" class="tablewrap"></div>
+<p><small>Enter one staff reading per row. For a turning point, enter its FS in one row and its BS in the next row using the same RL point name.</small></p>
+</div>
+
+<div class="card">
+<h2>3. Save Your Results</h2>
+<button onclick="window.print()">Print / Save as PDF</button>
+<button class="secondary" onclick="resetAll()">Reset Calculator</button>
+</div>
+
 <script>
-function updateFields(){
-const hi=document.getElementById("method").value==="hi";
-document.getElementById("hiFields").hidden=!hi;
-document.getElementById("riseFields").hidden=hi;
-document.getElementById("result").textContent="Enter the readings and tap Calculate.";
+function num(id){
+ const v=document.getElementById(id).value.trim();
+ return v===""?NaN:Number(v);
 }
-function readNumber(id){
-const v=document.getElementById(id).value;
-return v.trim()===""?NaN:Number(v);
+function calculateHI(){
+ const rl=num("rl"),bs=num("bs"),fs=num("fs");
+ const box=document.getElementById("hiResult");
+ if(![rl,bs,fs].every(Number.isFinite)){
+  box.hidden=false;box.textContent="Please enter all three readings.";return;
+ }
+ const hi=rl+bs,newRL=hi-fs;
+ box.hidden=false;
+ box.innerHTML="<b>Height of Instrument (HI)</b> = "+hi.toFixed(3)+" m<br>"+
+ "HI = RL + BS = "+rl+" + "+bs+"<br>"+
+ "<b>New RL</b> = "+newRL.toFixed(3)+" m<br>"+
+ "New RL = HI − FS = "+hi.toFixed(3)+" − "+fs;
 }
-function calculate(){
-if(document.getElementById("method").value==="hi"){
-const rl=readNumber("rl"),bs=readNumber("bs"),fs=readNumber("fs");
-if(![rl,bs,fs].every(Number.isFinite)||bs<0||fs<0){
-document.getElementById("result").textContent="Enter a valid RL and non-negative BS and FS.";return;
+function addRow(){
+ const body=document.querySelector("#levelTable tbody");
+ const tr=document.createElement("tr");
+ ["Station","BS","IS","FS"].forEach((name,i)=>{
+  const td=document.createElement("td");
+  const input=document.createElement("input");
+  input.setAttribute("aria-label",name);
+  if(i===0){input.value="Point "+(body.rows.length); }
+  else{input.type="number";input.step="any";}
+  td.appendChild(input);tr.appendChild(td);
+ });
+ body.appendChild(tr);
 }
-const hi=rl+bs,newRL=hi-fs;
-document.getElementById("result").textContent="Height of Instrument (HI) = "+hi.toFixed(3)+" m\nNew Reduced Level (RL) = "+newRL.toFixed(3)+" m\n\nHI = Known RL + BS\nHI = "+rl+" + "+bs+"\nNew RL = HI - FS\nNew RL = "+hi.toFixed(3)+" - "+fs;
-}else{
-const p=readNumber("previous"),c=readNumber("current"),rl=readNumber("knownRL");
-if(![p,c,rl].every(Number.isFinite)||p<0||c<0){
-document.getElementById("result").textContent="Enter valid readings and a known RL.";return;
+function calculateBook(){
+ const start=num("startRL");
+ const rows=[...document.querySelectorAll("#levelTable tbody tr")];
+ const box=document.getElementById("bookResult");
+ const output=document.getElementById("output");
+ if(!Number.isFinite(start)){
+  box.hidden=false;box.textContent="Please enter a valid starting RL.";return;
+ }
+ let currentRL=start,hi=NaN,sumBS=0,sumFS=0,valid=true;
+ let html="<table><thead><tr><th>Station</th><th>BS</th><th>IS</th><th>FS</th><th>HI</th><th>RL</th></tr></thead><tbody>";
+ rows.forEach((row,index)=>{
+  const cells=[...row.querySelectorAll("input")];
+  const station=cells[0].value.trim()||("Point "+(index+1));
+  const readings=cells.slice(1).map(x=>x.value.trim()===""?NaN:Number(x.value));
+  const [bs,is,fs]=readings;
+  const present=[bs,is,fs].filter(Number.isFinite).length;
+  let rl=currentRL;
+  if(present>1){valid=false;}
+  if(Number.isFinite(bs)){hi=currentRL+bs;sumBS+=bs;}
+  const staff=Number.isFinite(fs)?fs:(Number.isFinite(is)?is:NaN);
+  if(Number.isFinite(staff)){
+   if(!Number.isFinite(hi)){valid=false;}else{rl=hi-staff;currentRL=rl;}
+  }else if(Number.isFinite(bs)&&!Number.isFinite(is)&&!Number.isFinite(fs)){
+   rl=currentRL;
+  }
+  html+="<tr><td>"+escapeHTML(station)+"</td><td>"+fmt(bs)+"</td><td>"+fmt(is)+"</td><td>"+fmt(fs)+"</td><td>"+fmt(hi)+"</td><td>"+fmt(rl)+"</td></tr>";
+  if(Number.isFinite(fs))sumFS+=fs;
+ });
+ html+="</tbody></table>";
+ output.innerHTML=html;
+ box.hidden=false;
+ if(!valid){
+  box.textContent="Check the readings: use only one reading type per row, and enter a BS before IS/FS readings.";
+  return;
+ }
+ const lastRL=currentRL,check=sumBS-sumFS;
+ box.innerHTML="<b>Last RL:</b> "+lastRL.toFixed(3)+" m<br>"+
+ "<b>Sum of BS:</b> "+sumBS.toFixed(3)+" m<br>"+
+ "<b>Sum of FS:</b> "+sumFS.toFixed(3)+" m<br>"+
+ "<b>Arithmetic check (ΣBS − ΣFS):</b> "+check.toFixed(3)+" m<br>"+
+ "<small>For a complete level run, compare this check with Last RL − First RL. Enter turning-point BS/FS rows carefully.</small>";
 }
-const d=p-c,newRL=rl+d,type=d>0?"Rise":d<0?"Fall":"No rise or fall";
-document.getElementById("result").textContent=type+" = "+Math.abs(d).toFixed(3)+" m\nNew RL = "+newRL.toFixed(3)+" m\n\nNew RL = Previous RL + Previous reading - Current reading\nNew RL = "+rl+" + "+p+" - "+c;
-}
+function fmt(v){return Number.isFinite(v)?v.toFixed(3):"—";}
+function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function resetAll(){
+ if(confirm("Reset all readings?")){
+  document.querySelectorAll("input").forEach(i=>i.value="");
+  document.getElementById("startRL").value="100";
+  document.getElementById("hiResult").hidden=true;
+  document.getElementById("bookResult").hidden=true;
+  document.getElementById("output").innerHTML="";
+ }
 }
 </script>
 </body>
